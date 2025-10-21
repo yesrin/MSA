@@ -21,11 +21,12 @@
 
 ### Backend
 - **Java 21**, **Spring Boot 3.1.5**
-- **Spring Cloud 2022.0.4**: Gateway, Config, OpenFeign, Eureka
+- **Spring Cloud 2022.0.4**: Gateway, Config, OpenFeign
+- **Apache Kafka**: 비동기 메시징 (Event-Driven Architecture)
 - **Resilience4j**: Circuit Breaker, Fallback
 - **Micrometer Tracing + Brave**: 분산 추적
 - **Zipkin**: 트레이싱 서버
-- **MySQL**: Database per Service 패턴
+- **H2 / MySQL**: Database per Service 패턴
 
 ### Infra
 - **Docker**: 컨테이너화
@@ -44,23 +45,46 @@
 - 인증/인가 처리
 
 ### 3) 서비스 간 통신
-- **OpenFeign**: 선언적 HTTP Client로 동기 통신
-- Service Discovery (Eureka)를 통한 동적 라우팅
+- **동기 통신 (OpenFeign)**: REST API 호출, 즉시 응답 필요한 경우 (예: 사용자 검증)
+- **비동기 통신 (Kafka)**: 이벤트 발행/구독, 나중에 처리해도 되는 경우 (예: 알림 발송)
+- **Service Discovery**:
+  - 로컬 개발: URL 직접 지정 (localhost:8081)
+  - 운영 환경: Kubernetes Service (Eureka 대체)
 
 ### 4) 장애 대응 (Resilience4j)
 - **Circuit Breaker**: 장애 전파 차단
 - **Fallback**: User Service 장애 시 기본값 반환
 - 설정: 10번 중 50% 실패 시 Circuit Open
 
-### 5) 분산 추적 (Micrometer + Zipkin) ⭐ 최근 구현
+### 5) 분산 추적 (Micrometer + Zipkin)
 - **Trace ID/Span ID**: 서비스 간 요청 흐름 추적
 - **B3 Propagation**: OpenFeign 호출 시 trace context 자동 전파
 - **Zipkin UI**: 서비스 의존성 그래프 및 성능 병목 지점 시각화
 - 트러블슈팅: Spring Boot 3.x + OpenFeign 통합 이슈 해결 (`feign-micrometer`)
 
-### 6) 설정 관리 (Config Server)
+### 6) 비동기 메시징 (Apache Kafka) ⭐ 최근 구현
+- **Event-Driven Architecture**: 주문 생성 → 알림 발송 비동기 처리
+- **Producer**: Order Service가 주문 이벤트 발행
+- **Consumer**: Notification Service가 이벤트 구독하여 알림 발송
+- **동기 + 비동기 하이브리드**:
+  - 동기 (OpenFeign): 사용자 검증 등 즉시 필요한 데이터
+  - 비동기 (Kafka): 알림 발송 등 나중에 처리 가능한 작업
+- **Phase 1**: 기본 Pub/Sub 패턴
+- **Phase 2+**: Outbox Pattern, Saga Pattern, 멱등성 처리 예정
+
+### 7) Service Discovery
+- **Kubernetes 환경 (운영)**: Kubernetes Service DNS 사용
+  - Eureka 불필요 - K8s가 자동으로 Service Discovery 제공
+  - 예: `http://user-service:8080/api/users/1` (K8s DNS 자동 해석)
+- **로컬 개발**: URL 직접 지정
+  - 예: `http://localhost:8081/api/users/1`
+  - Eureka 미사용 (불필요한 리소스 절약)
+- **학습 포인트**: Spring Cloud Eureka vs Kubernetes Service 비교
+
+### 8) 설정 관리 (Config Server)
 - 중앙화된 설정 관리
 - 환경별 설정 분리 (dev, prod)
+- 로컬 개발 시 비활성화 (각 서비스의 application.yml 사용)
 
 ## 5. 최근 개선사항
 
