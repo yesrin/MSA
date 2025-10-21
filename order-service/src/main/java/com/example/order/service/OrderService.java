@@ -4,6 +4,7 @@ import com.example.order.client.UserClient;
 import com.example.order.dto.OrderWithUserResponse;
 import com.example.order.dto.UserResponse;
 import com.example.order.entity.Order;
+import com.example.order.kafka.OrderEventProducer;
 import com.example.order.repository.OrderRepository;
 import io.github.resilience4j.circuitbreaker.annotation.CircuitBreaker;
 import io.github.resilience4j.timelimiter.annotation.TimeLimiter;
@@ -24,6 +25,7 @@ public class OrderService {
 
     private final OrderRepository orderRepository;
     private final UserClient userClient;
+    private final OrderEventProducer orderEventProducer;  // Kafka Producer 추가
 
     @CircuitBreaker(name = "userClient", fallbackMethod = "createOrderFallback")
     @TimeLimiter(name = "userClient")
@@ -31,6 +33,7 @@ public class OrderService {
         // 분산 추적 테스트: User Service 호출하여 사용자 검증
         log.info("주문 생성 요청 - userId: {}, productName: {}", request.getUserId(), request.getProductName());
 
+        // [동기] User Service 호출로 사용자 검증
         UserResponse user = userClient.getUserById(request.getUserId());
         log.info("사용자 검증 완료 - userId: {}, userName: {}", user.getId(), user.getName());
 
@@ -42,6 +45,9 @@ public class OrderService {
         );
         Order savedOrder = orderRepository.save(order);
         log.info("주문 생성 완료 - orderId: {}", savedOrder.getId());
+
+        // Kafka 이벤트 발행
+        orderEventProducer.publishOrderCreated(savedOrder);
 
         return savedOrder;
     }
@@ -60,7 +66,12 @@ public class OrderService {
             request.getQuantity(),
             request.getPrice()
         );
-        return orderRepository.save(order);
+        Order savedOrder = orderRepository.save(order);
+
+        // Kafka 이벤트 발행 (Fallback에서도 발행)
+        orderEventProducer.publishOrderCreated(savedOrder);
+
+        return savedOrder;
     }
 
     public List<Order> getAllOrders() {

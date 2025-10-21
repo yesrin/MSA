@@ -14,5 +14,10 @@ dependencies {
     implementation 'org.springframework.boot:spring-boot-starter-actuator'  // Health check
     implementation 'io.github.openfeign:feign-micrometer'  // OpenFeign + Micrometer Tracing 통합
 
-    runtimeOnly 'com.mysql:mysql-connector-j'
+    // Kafka Producer
+    implementation 'org.springframework.kafka:spring-kafka'
+
+    // Database
+    runtimeOnly 'com.h2database:h2'  // 로컬 개발용
+    runtimeOnly 'com.mysql:mysql-connector-j'  // Docker/운영용
 }
