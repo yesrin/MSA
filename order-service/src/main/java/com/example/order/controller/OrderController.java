@@ -27,17 +27,21 @@ public class OrderController {
         return ResponseEntity.status(HttpStatus.CREATED).body(order);
     }
 
+    /**
+     * 주문 조회 API
+     * - userId 없으면: 전체 주문 조회
+     * - userId 있으면: 해당 사용자의 주문 + 사용자 정보 조회 (OpenFeign + Kafka)
+     */
     @GetMapping
-    public ResponseEntity<List<Order>> getAllOrders() {
-        log.info("[Order Controller] 전체 주문 조회");
-        List<Order> orders = orderService.getAllOrders();
-        return ResponseEntity.ok(orders);
-    }
-
-    @GetMapping
-    public ResponseEntity<List<OrderWithUserResponse>> getOrdersByUserId( Long userId) {
-        log.info("[Order Controller] userId로 주문 조회 (User 정보 포함) - userId: {}", userId);
-        List<OrderWithUserResponse> ordersWithUser = orderService.getOrdersWithUserInfo(userId);
-        return ResponseEntity.ok(ordersWithUser);
+    public ResponseEntity<?> getOrders(@RequestParam(required = false) Long userId) {
+        if (userId == null) {
+            log.info("[Order Controller] 전체 주문 조회");
+            List<Order> orders = orderService.getAllOrders();
+            return ResponseEntity.ok(orders);
+        } else {
+            log.info("[Order Controller] userId로 주문 조회 (User 정보 포함) - userId: {}", userId);
+            List<OrderWithUserResponse> ordersWithUser = orderService.getOrdersWithUserInfo(userId);
+            return ResponseEntity.ok(ordersWithUser);
+        }
     }
 }
