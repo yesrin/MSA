@@ -39,6 +39,12 @@ public class Order extends BaseEntity {
     private String paymentId;
 
     /**
+     * 배송 ID (Delivery Service에서 받음)
+     */
+    @Column
+    private String deliveryId;
+
+    /**
      * 취소 사유 (Saga 실패 시)
      */
     @Column
@@ -68,7 +74,22 @@ public class Order extends BaseEntity {
     }
 
     /**
-     * 주문 완료 (Saga 성공)
+     * 배송 시작
+     */
+    public void markDeliveryStarted(String deliveryId) {
+        this.status = OrderStatus.DELIVERY_STARTED;
+        this.deliveryId = deliveryId;
+    }
+
+    /**
+     * 배송 완료
+     */
+    public void markDelivered() {
+        this.status = OrderStatus.DELIVERED;
+    }
+
+    /**
+     * 주문 완료 (최종)
      */
     public void complete() {
         this.status = OrderStatus.COMPLETED;

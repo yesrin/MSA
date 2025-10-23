@@ -10,7 +10,7 @@ import org.springframework.stereotype.Component;
 import org.springframework.transaction.annotation.Transactional;
 
 /**
- * Saga 이벤트 구독 (Inventory, Payment 이벤트)
+ * Saga 이벤트 구독 (Inventory, Payment, Delivery 이벤트)
  * Order Service는 Saga Orchestrator 역할
  */
 @Slf4j
@@ -50,8 +50,7 @@ public class SagaEventConsumer {
     }
 
     /**
-     * 결제 완료 이벤트 수신 → 주문 완료
-     * 결제 실패 이벤트 수신 → 주문 취소
+     * 결제 완료/실패 이벤트 수신
      */
     @KafkaListener(
             topics = "payment-events",
@@ -68,14 +67,9 @@ public class SagaEventConsumer {
                     .orElseThrow(() -> new IllegalArgumentException("주문을 찾을 수 없습니다"));
 
             order.markPaymentCompleted(completedEvent.getPaymentId());
-            order.complete();
             orderRepository.save(order);
 
-            log.info("✅ [Saga Success] 주문 완료 - orderId: {}, paymentId: {}",
-                    completedEvent.getOrderId(), completedEvent.getPaymentId());
-
-            // 주문 완료 이벤트 발행 (Notification Service로)
-            orderEventProducer.publishOrderCompleted(order);
+            log.info("✅ [결제 완료] orderId: {}, 다음: 배송 시작 대기", completedEvent.getOrderId());
 
         } else if (event instanceof PaymentFailedEvent failedEvent) {
             log.info("📩 [Kafka Consumer] 결제 실패 이벤트 수신 - orderId: {}",
@@ -92,6 +86,55 @@ public class SagaEventConsumer {
 
             // 주문 취소 이벤트 발행 (Notification Service로)
             orderEventProducer.publishOrderCancelled(order);
+        }
+    }
+
+    /**
+     * 배송 시작/완료/실패 이벤트 수신
+     */
+    @KafkaListener(
+            topics = "delivery-events",
+            groupId = "order-service-group",
+            containerFactory = "kafkaListenerContainerFactory"
+    )
+    @Transactional
+    public void handleDeliveryEvent(Object event) {
+        if (event instanceof DeliveryStartedEvent startedEvent) {
+            log.info("📩 [Kafka Consumer] 배송 시작 이벤트 수신 - orderId: {}, deliveryId: {}",
+                    startedEvent.getOrderId(), startedEvent.getDeliveryId());
+
+            Order order = orderRepository.findById(startedEvent.getOrderId())
+                    .orElseThrow(() -> new IllegalArgumentException("주문을 찾을 수 없습니다"));
+
+            order.markDeliveryStarted(startedEvent.getDeliveryId());
+            orderRepository.save(order);
+
+            log.info("🚚 [배송 시작] orderId: {}, deliveryId: {}",
+                    startedEvent.getOrderId(), startedEvent.getDeliveryId());
+
+        } else if (event instanceof DeliveryCompletedEvent completedEvent) {
+            log.info("📩 [Kafka Consumer] 배송 완료 이벤트 수신 - orderId: {}",
+                    completedEvent.getOrderId());
+
+            Order order = orderRepository.findById(completedEvent.getOrderId())
+                    .orElseThrow(() -> new IllegalArgumentException("주문을 찾을 수 없습니다"));
+
+            order.markDelivered();
+            order.complete(); // 최종 완료
+            orderRepository.save(order);
+
+            log.info("✅ [Saga Success] 주문 최종 완료 - orderId: {}", completedEvent.getOrderId());
+
+            // 주문 완료 이벤트 발행 (Notification Service로)
+            orderEventProducer.publishOrderCompleted(order);
+
+        } else if (event instanceof DeliveryFailedEvent failedEvent) {
+            log.info("📩 [Kafka Consumer] 배송 실패 이벤트 수신 - orderId: {}",
+                    failedEvent.getOrderId());
+
+            // 배송 실패는 고객센터 처리 (주문은 유지)
+            log.warn("⚠️ [배송 실패] orderId: {}, reason: {} - 고객센터 처리 필요",
+                    failedEvent.getOrderId(), failedEvent.getReason());
         }
     }
 }
