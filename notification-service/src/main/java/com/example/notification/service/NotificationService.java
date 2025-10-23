@@ -1,37 +1,51 @@
 package com.example.notification.service;
 
-import com.example.common.event.OrderCreatedEvent;
+import com.example.common.event.*;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Service;
 
 /**
  * 알림 발송 서비스
- * - Phase 1: 로그 출력 (시뮬레이션)
- * - 향후 확장: 이메일/SMS 발송, Push 알림 등
+ * - Saga Pattern의 각 단계별 알림 발송
  */
 @Slf4j
 @Service
 public class NotificationService {
 
     /**
-     * 주문 생성 알림 발송
-     * @param event 주문 생성 이벤트
+     * 주문 생성 알림 (Saga 시작)
      */
-    public void sendOrderNotification(OrderCreatedEvent event) {
-        log.info("📧 ========== 알림 발송 시작 ==========");
-        log.info("📧 [알림] 주문이 생성되었습니다!");
+    public void sendOrderCreatedNotification(OrderCreatedEvent event) {
+        log.info("📧 ========== [주문 생성 알림] ==========");
+        log.info("📧 주문이 접수되었습니다.");
         log.info("📧 주문 ID: {}", event.getOrderId());
-        log.info("📧 사용자 ID: {}", event.getUserId());
-        log.info("📧 상품명: {}", event.getProductName());
-        log.info("📧 수량: {}", event.getQuantity());
-        log.info("📧 가격: {}원", event.getPrice());
-        log.info("📧 주문 시각: {}", event.getCreatedAt());
-        log.info("📧 ========== 알림 발송 완료 ==========");
+        log.info("📧 상품명: {} ({}개)", event.getProductName(), event.getQuantity());
+        log.info("📧 결제 금액: {}원", event.getPrice());
+        log.info("📧 ========================================");
+    }
 
-        // TODO: Phase 2+ 확장 사항
-        // - 이메일 발송: emailService.send(...)
-        // - SMS 발송: smsService.send(...)
-        // - Push 알림: pushService.send(...)
-        // - DB에 알림 이력 저장 (선택)
+    /**
+     * 주문 완료 알림 (Saga 성공)
+     */
+    public void sendOrderCompletedNotification(OrderCompletedEvent event) {
+        log.info("📧 ========== [주문 완료 알림] ==========");
+        log.info("📧 ✅ 주문이 성공적으로 완료되었습니다!");
+        log.info("📧 주문 ID: {}", event.getOrderId());
+        log.info("📧 상품명: {} ({}개)", event.getProductName(), event.getQuantity());
+        log.info("📧 결제 ID: {}", event.getPaymentId());
+        log.info("📧 완료 시각: {}", event.getCompletedAt());
+        log.info("📧 ========================================");
+    }
+
+    /**
+     * 주문 취소 알림 (Saga 실패)
+     */
+    public void sendOrderCancelledNotification(OrderCancelledEvent event) {
+        log.info("📧 ========== [주문 취소 알림] ==========");
+        log.info("📧 ❌ 주문이 취소되었습니다.");
+        log.info("📧 주문 ID: {}", event.getOrderId());
+        log.info("📧 취소 사유: {}", event.getReason());
+        log.info("📧 취소 시각: {}", event.getCancelledAt());
+        log.info("📧 ========================================");
     }
 }

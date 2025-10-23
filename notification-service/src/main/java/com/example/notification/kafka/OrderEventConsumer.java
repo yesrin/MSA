@@ -1,6 +1,6 @@
 package com.example.notification.kafka;
 
-import com.example.common.event.OrderCreatedEvent;
+import com.example.common.event.*;
 import com.example.notification.service.NotificationService;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
@@ -10,7 +10,7 @@ import org.springframework.stereotype.Component;
 /**
  * 주문 이벤트 Kafka Consumer
  * - order-events 토픽을 구독
- * - 주문 생성 이벤트 수신 시 NotificationService 호출
+ * - 주문 생성/완료/취소 이벤트 처리
  */
 @Slf4j
 @Component
@@ -20,27 +20,35 @@ public class OrderEventConsumer {
     private final NotificationService notificationService;
 
     /**
-     * 주문 생성 이벤트 처리
-     * @param event 주문 생성 이벤트
+     * 주문 이벤트 처리 (생성/완료/취소)
      */
     @KafkaListener(
             topics = "order-events",
             groupId = "notification-service-group",
             containerFactory = "kafkaListenerContainerFactory"
     )
-    public void handleOrderCreated(OrderCreatedEvent event) {
-        log.info("📩 [Kafka Consumer] 주문 이벤트 수신: orderId={}, userId={}, product={}",
-                event.getOrderId(), event.getUserId(), event.getProductName());
-
+    public void handleOrderEvent(Object event) {
         try {
-            // 알림 발송
-            notificationService.sendOrderNotification(event);
-            log.info("✅ [Kafka Consumer] 알림 발송 완료: orderId={}", event.getOrderId());
+            if (event instanceof OrderCreatedEvent createdEvent) {
+                log.info("📩 [Kafka Consumer] 주문 생성 이벤트 수신 - orderId: {}, userId: {}",
+                        createdEvent.getOrderId(), createdEvent.getUserId());
+                notificationService.sendOrderCreatedNotification(createdEvent);
+
+            } else if (event instanceof OrderCompletedEvent completedEvent) {
+                log.info("📩 [Kafka Consumer] 주문 완료 이벤트 수신 - orderId: {}, paymentId: {}",
+                        completedEvent.getOrderId(), completedEvent.getPaymentId());
+                notificationService.sendOrderCompletedNotification(completedEvent);
+
+            } else if (event instanceof OrderCancelledEvent cancelledEvent) {
+                log.info("📩 [Kafka Consumer] 주문 취소 이벤트 수신 - orderId: {}, reason: {}",
+                        cancelledEvent.getOrderId(), cancelledEvent.getReason());
+                notificationService.sendOrderCancelledNotification(cancelledEvent);
+            }
+
+            log.info("✅ [Kafka Consumer] 알림 발송 완료");
         } catch (Exception e) {
-            log.error("❌ [Kafka Consumer] 알림 발송 실패: orderId={}, error={}",
-                    event.getOrderId(), e.getMessage(), e);
-            // Phase 3에서 DLQ 처리 추가 예정
-            throw e; // Kafka Retry 트리거
+            log.error("❌ [Kafka Consumer] 알림 발송 실패", e);
+            // Phase 3: DLQ 처리 추가 예정
         }
     }
 }
