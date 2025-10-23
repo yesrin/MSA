@@ -32,10 +32,53 @@ public class Order extends BaseEntity {
     @Column(nullable = false)
     private OrderStatus status = OrderStatus.PENDING;
 
+    /**
+     * 결제 ID (Payment Service에서 받음)
+     */
+    @Column
+    private String paymentId;
+
+    /**
+     * 취소 사유 (Saga 실패 시)
+     */
+    @Column
+    private String cancellationReason;
+
     public Order(Long userId, String productName, Integer quantity, BigDecimal price) {
         this.userId = userId;
         this.productName = productName;
         this.quantity = quantity;
         this.price = price;
+        this.status = OrderStatus.PENDING;
+    }
+
+    /**
+     * 재고 확보 완료
+     */
+    public void markInventoryReserved() {
+        this.status = OrderStatus.INVENTORY_RESERVED;
+    }
+
+    /**
+     * 결제 완료
+     */
+    public void markPaymentCompleted(String paymentId) {
+        this.status = OrderStatus.PAYMENT_COMPLETED;
+        this.paymentId = paymentId;
+    }
+
+    /**
+     * 주문 완료 (Saga 성공)
+     */
+    public void complete() {
+        this.status = OrderStatus.COMPLETED;
+    }
+
+    /**
+     * 주문 취소 (Saga 실패)
+     */
+    public void cancel(String reason) {
+        this.status = OrderStatus.CANCELLED;
+        this.cancellationReason = reason;
     }
 }
