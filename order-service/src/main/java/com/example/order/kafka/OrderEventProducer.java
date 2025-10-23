@@ -1,6 +1,6 @@
 package com.example.order.kafka;
 
-import com.example.common.event.OrderCreatedEvent;
+import com.example.common.event.*;
 import com.example.order.entity.Order;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
@@ -13,21 +13,18 @@ import java.util.concurrent.CompletableFuture;
 
 /**
  * 주문 이벤트 Kafka Producer
- * - 주문 생성 시 order-events 토픽으로 이벤트 발행
- * - Phase 1: 단순 발행 (비동기)
- * - Phase 2: Outbox 패턴 적용 예정
+ * - 주문 생성/완료/취소 이벤트 발행
  */
 @Slf4j
 @Component
 @RequiredArgsConstructor
 public class OrderEventProducer {
 
-    private final KafkaTemplate<String, OrderCreatedEvent> kafkaTemplate;
+    private final KafkaTemplate<String, Object> kafkaTemplate;
     private static final String TOPIC = "order-events";
 
     /**
      * 주문 생성 이벤트 발행
-     * @param order 생성된 주문
      */
     public void publishOrderCreated(Order order) {
         OrderCreatedEvent event = OrderCreatedEvent.builder()
@@ -35,29 +32,58 @@ public class OrderEventProducer {
                 .userId(order.getUserId())
                 .productName(order.getProductName())
                 .quantity(order.getQuantity())
-                .price(order.getPrice().intValue())  // BigDecimal → Integer 변환
+                .price(order.getPrice().intValue())
                 .createdAt(LocalDateTime.now())
                 .build();
 
-        log.info("📤 [Kafka Producer] 주문 이벤트 발행 시작 - orderId: {}, topic: {}",
-                order.getId(), TOPIC);
+        log.info("📤 [Kafka Producer] 주문 생성 이벤트 발행 - orderId: {}", order.getId());
+        sendEvent(event);
+    }
 
-        // 비동기 전송 (CompletableFuture)
-        CompletableFuture<SendResult<String, OrderCreatedEvent>> future =
-                kafkaTemplate.send(TOPIC, event.getOrderId().toString(), event);
+    /**
+     * 주문 완료 이벤트 발행 (Saga 성공)
+     */
+    public void publishOrderCompleted(Order order) {
+        OrderCompletedEvent event = OrderCompletedEvent.builder()
+                .orderId(order.getId())
+                .userId(order.getUserId())
+                .productName(order.getProductName())
+                .quantity(order.getQuantity())
+                .paymentId(order.getPaymentId())
+                .completedAt(LocalDateTime.now())
+                .build();
 
-        // 콜백으로 성공/실패 로깅
+        log.info("📤 [Kafka Producer] 주문 완료 이벤트 발행 - orderId: {}", order.getId());
+        sendEvent(event);
+    }
+
+    /**
+     * 주문 취소 이벤트 발행 (Saga 실패)
+     */
+    public void publishOrderCancelled(Order order) {
+        OrderCancelledEvent event = OrderCancelledEvent.builder()
+                .orderId(order.getId())
+                .userId(order.getUserId())
+                .reason(order.getCancellationReason())
+                .cancelledAt(LocalDateTime.now())
+                .build();
+
+        log.info("📤 [Kafka Producer] 주문 취소 이벤트 발행 - orderId: {}", order.getId());
+        sendEvent(event);
+    }
+
+    /**
+     * Kafka 이벤트 전송 공통 로직
+     */
+    private void sendEvent(Object event) {
+        CompletableFuture<SendResult<String, Object>> future =
+                kafkaTemplate.send(TOPIC, event.toString(), event);
+
         future.whenComplete((result, ex) -> {
             if (ex == null) {
-                log.info("✅ [Kafka Producer] 이벤트 발행 성공 - orderId: {}, partition: {}, offset: {}",
-                        event.getOrderId(),
-                        result.getRecordMetadata().partition(),
-                        result.getRecordMetadata().offset());
+                log.info("✅ [Kafka Producer] 이벤트 발행 성공");
             } else {
-                log.error("❌ [Kafka Producer] 이벤트 발행 실패 - orderId: {}, error: {}",
-                        event.getOrderId(), ex.getMessage(), ex);
-                // Phase 1: 실패 시 로그만 남김
-                // Phase 2: Outbox 패턴으로 실패 처리
+                log.error("❌ [Kafka Producer] 이벤트 발행 실패", ex);
             }
         });
     }
