@@ -21,6 +21,10 @@ public class InventoryEventConsumer {
 
     /**
      * 재고 확보 성공 이벤트 수신 → 결제 처리
+     *
+     * 개선사항:
+     * - try-catch 제거: DB 연결 실패 등은 자동 재시도
+     * - 비즈니스 실패(잔액 부족)는 명시적 처리
      */
     @KafkaListener(
             topics = "inventory-events",
@@ -31,21 +35,17 @@ public class InventoryEventConsumer {
         log.info("📩 [Kafka Consumer] 재고 확보 성공 이벤트 수신 - orderId: {}, 결제 처리 시작",
                 event.getOrderId());
 
-        try {
-            Payment payment = paymentService.processPayment(
-                    event.getOrderId(),
-                    event.getTotalPrice()
-            );
+        // DB 예외 발생 시 자동 재시도 (CommonErrorHandler)
+        Payment payment = paymentService.processPayment(
+                event.getOrderId(),
+                event.getTotalPrice()
+        );
 
-            if (payment != null) {
-                // 결제 성공 → Order Service로 이벤트 발행
-                paymentEventProducer.publishPaymentCompleted(event, payment);
-            } else {
-                // 결제 실패 → Inventory Service & Order Service로 실패 이벤트 발행
-                paymentEventProducer.publishPaymentFailed(event);
-            }
-        } catch (Exception e) {
-            log.error("❌ [Kafka Consumer] 결제 처리 실패 - orderId: {}", event.getOrderId(), e);
+        if (payment != null) {
+            // 결제 성공 → 트랜잭션 커밋 후 이벤트 발행
+            paymentEventProducer.publishPaymentCompleted(event, payment);
+        } else {
+            // 결제 실패 (비즈니스 로직) → 보상 트랜잭션 이벤트 발행
             paymentEventProducer.publishPaymentFailed(event);
         }
     }

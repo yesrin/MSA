@@ -24,7 +24,25 @@ public class DeliveryEventProducer {
     private static final String TOPIC = "delivery-events";
 
     /**
+     * 배송 준비 완료 이벤트 발행
+     * (prepareDelivery 완료 후 즉시 발행)
+     */
+    public void publishDeliveryPrepared(Delivery delivery) {
+        DeliveryStartedEvent event = DeliveryStartedEvent.builder()
+                .orderId(delivery.getOrderId())
+                .deliveryId(delivery.getDeliveryId())
+                .address(delivery.getAddress())
+                .carrier(delivery.getCarrier())
+                .startedAt(LocalDateTime.now())
+                .build();
+
+        log.info("📤 [Kafka Producer] 배송 준비 완료 이벤트 발행 - orderId: {}", delivery.getOrderId());
+        sendEvent(event);
+    }
+
+    /**
      * 배송 시작 이벤트 발행
+     * (실제 물류센터 출고 후 발행)
      */
     public void publishDeliveryStarted(Delivery delivery) {
         DeliveryStartedEvent event = DeliveryStartedEvent.builder()
@@ -35,7 +53,7 @@ public class DeliveryEventProducer {
                 .startedAt(LocalDateTime.now())
                 .build();
 
-        log.info("📤 [Kafka Producer] 배송 시작 이벤트 발행 - orderId: {}", delivery.getOrderId());
+        log.info("📤 [Kafka Producer] 배송 시작 이벤트 발행 (물류센터 출고) - orderId: {}", delivery.getOrderId());
         sendEvent(event);
     }
 

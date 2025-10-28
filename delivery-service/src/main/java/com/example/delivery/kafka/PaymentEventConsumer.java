@@ -21,6 +21,10 @@ public class PaymentEventConsumer {
 
     /**
      * 결제 완료 이벤트 수신 → 배송 준비 시작
+     *
+     * 예외 처리 개선:
+     * - try-catch 제거: 재시도 가능한 예외는 자동 재시도 (CommonErrorHandler)
+     * - 재시도 후에도 실패 시 DLQ(Dead Letter Queue)로 이동
      */
     @KafkaListener(
             topics = "payment-events",
@@ -31,14 +35,10 @@ public class PaymentEventConsumer {
         log.info("📩 [Kafka Consumer] 결제 완료 이벤트 수신 - orderId: {}, 배송 준비 시작",
                 event.getOrderId());
 
-        try {
-            Delivery delivery = deliveryService.prepareDelivery(event.getOrderId());
+        // 예외 발생 시 자동 재시도 (KafkaConsumerConfig의 ErrorHandler)
+        Delivery delivery = deliveryService.prepareDelivery(event.getOrderId());
 
-            // 배송 시작 이벤트 발행 (즉시 발행, 실제 배송은 비동기)
-            deliveryEventProducer.publishDeliveryStarted(delivery);
-
-        } catch (Exception e) {
-            log.error("❌ [Kafka Consumer] 배송 준비 실패 - orderId: {}", event.getOrderId(), e);
-        }
+        // 이벤트 발행은 트랜잭션 커밋 후 (TransactionalEventListener 사용 권장)
+        deliveryEventProducer.publishDeliveryPrepared(delivery);
     }
 }

@@ -48,6 +48,12 @@ public class KafkaConsumerConfig {
         ConcurrentKafkaListenerContainerFactory<String, Object> factory =
                 new ConcurrentKafkaListenerContainerFactory<>();
         factory.setConsumerFactory(consumerFactory());
+
+        // 에러 핸들러 설정 - 재시도 가능한 예외와 불가능한 예외 구분
+        factory.setCommonErrorHandler(new org.springframework.kafka.listener.DefaultErrorHandler(
+                new org.springframework.util.backoff.FixedBackOff(1000L, 3L) // 1초 간격으로 3회 재시도
+        ));
+
         return factory;
     }
 }

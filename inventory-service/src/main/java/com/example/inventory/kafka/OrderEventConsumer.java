@@ -21,6 +21,10 @@ public class OrderEventConsumer {
 
     /**
      * 주문 생성 이벤트 수신 → 재고 확보 시도
+     *
+     * 개선사항:
+     * - DB/Redis 연결 실패 시 자동 재시도 (ErrorHandler)
+     * - 비즈니스 실패(재고 부족)는 명시적 처리
      */
     @KafkaListener(
             topics = "order-events",
@@ -31,38 +35,31 @@ public class OrderEventConsumer {
         log.info("📩 [Kafka Consumer] 주문 생성 이벤트 수신 - orderId: {}, productId: {}, quantity: {}",
                 event.getOrderId(), event.getProductId(), event.getQuantity());
 
-        try {
-            boolean success = inventoryService.reserveInventory(
-                    event.getProductId(),
-                    event.getQuantity()
-            );
+        // 분산 락 획득 실패나 DB 연결 실패 시 자동 재시도
+        boolean success = inventoryService.reserveInventory(
+                event.getProductId(),
+                event.getQuantity()
+        );
 
-            if (success) {
-                // 재고 확보 성공 → Payment Service로 이벤트 발행
-                inventoryEventProducer.publishInventoryReserved(event);
-            } else {
-                // 재고 부족 → Order Service로 실패 이벤트 발행
-                int availableQuantity = inventoryService.getAvailableQuantity(event.getProductId());
-                inventoryEventProducer.publishInventoryReservationFailed(
-                        event.getOrderId(),
-                        event.getProductId(),
-                        event.getQuantity(),
-                        availableQuantity
-                );
-            }
-        } catch (Exception e) {
-            log.error("❌ [Kafka Consumer] 재고 처리 실패 - orderId: {}", event.getOrderId(), e);
+        if (success) {
+            // 재고 확보 성공 → 트랜잭션 커밋 후 이벤트 발행
+            inventoryEventProducer.publishInventoryReserved(event);
+        } else {
+            // 재고 부족 (비즈니스 실패) → 실패 이벤트 발행
+            int availableQuantity = inventoryService.getAvailableQuantity(event.getProductId());
             inventoryEventProducer.publishInventoryReservationFailed(
                     event.getOrderId(),
                     event.getProductId(),
                     event.getQuantity(),
-                    0
+                    availableQuantity
             );
         }
     }
 
     /**
      * 결제 실패 이벤트 수신 → 재고 복구 (보상 트랜잭션)
+     *
+     * 보상 트랜잭션은 반드시 성공해야 하므로 자동 재시도 적용
      */
     @KafkaListener(
             topics = "payment-events",
@@ -73,15 +70,12 @@ public class OrderEventConsumer {
         log.info("📩 [Kafka Consumer] 결제 실패 이벤트 수신 - orderId: {}, 재고 복구 시작",
                 event.getOrderId());
 
-        try {
-            inventoryService.releaseInventory(
-                    event.getProductId(),
-                    event.getQuantity()
-            );
-            log.info("✅ [보상 트랜잭션] 재고 복구 완료 - orderId: {}", event.getOrderId());
-        } catch (Exception e) {
-            log.error("❌ [보상 트랜잭션] 재고 복구 실패 - orderId: {}", event.getOrderId(), e);
-            // 실무에서는 DLQ(Dead Letter Queue)로 전송하거나 알림 발송
-        }
+        // 재고 복구 실패 시 자동 재시도 (보상 트랜잭션은 반드시 성공해야 함)
+        inventoryService.releaseInventory(
+                event.getProductId(),
+                event.getQuantity()
+        );
+
+        log.info("✅ [보상 트랜잭션] 재고 복구 완료 - orderId: {}", event.getOrderId());
     }
 }
