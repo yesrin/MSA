@@ -1,4 +1,4 @@
-package com.example.inventory.config;
+package com.example.common.config;
 
 import org.apache.kafka.clients.consumer.ConsumerConfig;
 import org.apache.kafka.common.serialization.StringDeserializer;
@@ -14,23 +14,31 @@ import org.springframework.kafka.support.serializer.JsonDeserializer;
 import java.util.HashMap;
 import java.util.Map;
 
+/**
+ * 공통 Kafka Consumer 설정
+ * 모든 마이크로서비스에서 재사용 가능
+ */
 @Configuration
 @EnableKafka
 public class KafkaConsumerConfig {
 
-    @Value("${spring.kafka.bootstrap-servers}")
+    @Value("${spring.kafka.bootstrap-servers:localhost:9092}")
     private String bootstrapServers;
+
+    @Value("${spring.kafka.consumer.group-id:default-group}")
+    private String groupId;
 
     @Bean
     public ConsumerFactory<String, Object> consumerFactory() {
         Map<String, Object> props = new HashMap<>();
         props.put(ConsumerConfig.BOOTSTRAP_SERVERS_CONFIG, bootstrapServers);
-        props.put(ConsumerConfig.GROUP_ID_CONFIG, "inventory-service-group");
+        props.put(ConsumerConfig.GROUP_ID_CONFIG, groupId);
         props.put(ConsumerConfig.KEY_DESERIALIZER_CLASS_CONFIG, StringDeserializer.class);
         props.put(ConsumerConfig.VALUE_DESERIALIZER_CLASS_CONFIG, JsonDeserializer.class);
         props.put(JsonDeserializer.TRUSTED_PACKAGES, "*");
-        props.put(JsonDeserializer.VALUE_DEFAULT_TYPE, "com.example.common.event.OrderCreatedEvent");
         props.put(ConsumerConfig.AUTO_OFFSET_RESET_CONFIG, "earliest");
+        props.put(ConsumerConfig.ENABLE_AUTO_COMMIT_CONFIG, true);
+        props.put(ConsumerConfig.AUTO_COMMIT_INTERVAL_MS_CONFIG, 1000);
 
         return new DefaultKafkaConsumerFactory<>(props);
     }
