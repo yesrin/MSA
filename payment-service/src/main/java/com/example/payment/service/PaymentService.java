@@ -1,6 +1,7 @@
 package com.example.payment.service;
 
 import com.example.payment.config.PaymentGatewayConfig;
+import com.example.payment.exception.PaymentNotFoundException;
 import com.example.payment.dto.PaymentRequest;
 import com.example.payment.dto.PaymentResponse;
 import com.example.payment.entity.Payment;
@@ -73,7 +74,7 @@ public class PaymentService {
         log.info("🔄 [Payment Service] 결제 취소 (보상 트랜잭션) - orderId: {}", orderId);
 
         Payment payment = paymentRepository.findByOrderId(orderId)
-                .orElseThrow(() -> new IllegalArgumentException("결제 정보를 찾을 수 없습니다: " + orderId));
+                .orElseThrow(() -> new PaymentNotFoundException(orderId));
 
         // PG사에 취소 요청
         PaymentGatewayStrategy strategy = gatewayFactory.getStrategy(gatewayConfig.getDefaultGateway());

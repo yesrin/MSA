@@ -2,6 +2,7 @@ package com.example.order.kafka;
 
 import com.example.common.event.*;
 import com.example.order.entity.Order;
+import com.example.order.exception.OrderNotFoundException;
 import com.example.order.repository.OrderRepository;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
@@ -36,7 +37,7 @@ public class SagaEventConsumer {
                     failedEvent.getOrderId());
 
             Order order = orderRepository.findById(failedEvent.getOrderId())
-                    .orElseThrow(() -> new IllegalArgumentException("주문을 찾을 수 없습니다"));
+                    .orElseThrow(() -> new OrderNotFoundException(failedEvent.getOrderId()));
 
             order.cancel(failedEvent.getReason());
             orderRepository.save(order);
@@ -64,7 +65,7 @@ public class SagaEventConsumer {
                     completedEvent.getOrderId(), completedEvent.getPaymentId());
 
             Order order = orderRepository.findById(completedEvent.getOrderId())
-                    .orElseThrow(() -> new IllegalArgumentException("주문을 찾을 수 없습니다"));
+                    .orElseThrow(() -> new OrderNotFoundException(completedEvent.getOrderId()));
 
             order.markPaymentCompleted(completedEvent.getPaymentId());
             orderRepository.save(order);
@@ -76,7 +77,7 @@ public class SagaEventConsumer {
                     failedEvent.getOrderId());
 
             Order order = orderRepository.findById(failedEvent.getOrderId())
-                    .orElseThrow(() -> new IllegalArgumentException("주문을 찾을 수 없습니다"));
+                    .orElseThrow(() -> new OrderNotFoundException(failedEvent.getOrderId()));
 
             order.cancel(failedEvent.getReason());
             orderRepository.save(order);
@@ -104,7 +105,7 @@ public class SagaEventConsumer {
                     startedEvent.getOrderId(), startedEvent.getDeliveryId());
 
             Order order = orderRepository.findById(startedEvent.getOrderId())
-                    .orElseThrow(() -> new IllegalArgumentException("주문을 찾을 수 없습니다"));
+                    .orElseThrow(() -> new OrderNotFoundException("주문을 찾을 수 없습니다"));
 
             order.markDeliveryStarted(startedEvent.getDeliveryId());
             orderRepository.save(order);
@@ -117,7 +118,7 @@ public class SagaEventConsumer {
                     completedEvent.getOrderId());
 
             Order order = orderRepository.findById(completedEvent.getOrderId())
-                    .orElseThrow(() -> new IllegalArgumentException("주문을 찾을 수 없습니다"));
+                    .orElseThrow(() -> new OrderNotFoundException("주문을 찾을 수 없습니다"));
 
             order.markDelivered();
             order.complete(); // 최종 완료

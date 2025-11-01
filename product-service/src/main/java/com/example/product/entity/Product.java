@@ -1,6 +1,7 @@
 package com.example.product.entity;
 
 import com.example.common.BaseEntity;
+import com.example.product.exception.InvalidProductPriceException;
 import jakarta.persistence.*;
 import lombok.Getter;
 import lombok.NoArgsConstructor;
@@ -98,7 +99,7 @@ public class Product extends BaseEntity {
      */
     public void updatePrice(BigDecimal newPrice) {
         if (newPrice.compareTo(BigDecimal.ZERO) <= 0) {
-            throw new IllegalArgumentException("가격은 0보다 커야 합니다");
+            throw new InvalidProductPriceException(newPrice);
         }
         this.price = newPrice;
     }

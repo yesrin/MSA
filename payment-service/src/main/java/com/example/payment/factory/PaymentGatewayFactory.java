@@ -1,6 +1,8 @@
 package com.example.payment.factory;
 
+import com.example.payment.exception.UnsupportedPaymentGatewayException;
 import com.example.payment.strategy.PaymentGatewayStrategy;
+import jakarta.annotation.PostConstruct;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Component;
 
@@ -22,6 +24,7 @@ public class PaymentGatewayFactory {
     /**
      * 생성자 주입 시 모든 전략을 Map으로 관리
      */
+    @PostConstruct
     public void init() {
         for (PaymentGatewayStrategy strategy : strategies) {
             strategyMap.put(strategy.getGatewayType(), strategy);
@@ -34,13 +37,9 @@ public class PaymentGatewayFactory {
      * @return 해당하는 전략 구현체
      */
     public PaymentGatewayStrategy getStrategy(String gatewayType) {
-        if (strategyMap.isEmpty()) {
-            init();
-        }
-
         PaymentGatewayStrategy strategy = strategyMap.get(gatewayType);
         if (strategy == null) {
-            throw new IllegalArgumentException("지원하지 않는 PG 타입입니다: " + gatewayType);
+            throw new UnsupportedPaymentGatewayException(gatewayType);
         }
         return strategy;
     }

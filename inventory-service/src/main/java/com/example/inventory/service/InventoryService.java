@@ -1,6 +1,7 @@
 package com.example.inventory.service;
 
 import com.example.inventory.annotation.DistributedLock;
+import com.example.inventory.exception.InventoryNotFoundException;
 import com.example.inventory.entity.Inventory;
 import com.example.inventory.repository.InventoryRepository;
 import lombok.RequiredArgsConstructor;
@@ -27,7 +28,7 @@ public class InventoryService {
                 productId, quantity);
 
         Inventory inventory = inventoryRepository.findByProductId(productId)
-                .orElseThrow(() -> new IllegalArgumentException("상품 재고를 찾을 수 없습니다: " + productId));
+                .orElseThrow(() -> new InventoryNotFoundException(productId));
 
         boolean success = inventory.reserve(quantity);
 
@@ -52,7 +53,7 @@ public class InventoryService {
                 productId, quantity);
 
         Inventory inventory = inventoryRepository.findByProductId(productId)
-                .orElseThrow(() -> new IllegalArgumentException("상품 재고를 찾을 수 없습니다: " + productId));
+                .orElseThrow(() -> new InventoryNotFoundException(productId));
 
         inventory.release(quantity);
         inventoryRepository.save(inventory);

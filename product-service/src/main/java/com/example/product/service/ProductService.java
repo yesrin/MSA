@@ -2,6 +2,7 @@ package com.example.product.service;
 
 import com.example.product.entity.Category;
 import com.example.product.entity.Product;
+import com.example.product.exception.ProductNotFoundException;
 import com.example.product.repository.ProductRepository;
 import lombok.Getter;
 import lombok.NoArgsConstructor;
@@ -58,7 +59,7 @@ public class ProductService {
     @Transactional(readOnly = true)
     public Product getProductById(Long id) {
         return productRepository.findByIdAndActiveTrue(id)
-                .orElseThrow(() -> new IllegalArgumentException("상품을 찾을 수 없습니다: " + id));
+                .orElseThrow(() -> new ProductNotFoundException(id));
     }
 
     /**
@@ -106,7 +107,7 @@ public class ProductService {
         log.info("[Product Service] 상품 비활성화 - productId: {}", id);
 
         Product product = productRepository.findById(id)
-                .orElseThrow(() -> new IllegalArgumentException("상품을 찾을 수 없습니다: " + id));
+                .orElseThrow(() -> new ProductNotFoundException(id));
 
         product.deactivate();
         productRepository.save(product);

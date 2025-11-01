@@ -1,6 +1,7 @@
 package com.example.delivery.service;
 
 import com.example.delivery.entity.Delivery;
+import com.example.delivery.exception.DeliveryNotFoundException;
 import com.example.delivery.kafka.DeliveryEventProducer;
 import com.example.delivery.repository.DeliveryRepository;
 import lombok.RequiredArgsConstructor;
@@ -54,7 +55,7 @@ public class DeliveryService {
             Thread.sleep(3000); // 3초 대기 (물류센터 출고 시뮬레이션)
 
             Delivery delivery = deliveryRepository.findById(deliveryId)
-                    .orElseThrow(() -> new IllegalArgumentException("배송 정보를 찾을 수 없습니다"));
+                    .orElseThrow(() -> new DeliveryNotFoundException(deliveryId));
 
             delivery.start();
             deliveryRepository.save(delivery);
@@ -87,7 +88,7 @@ public class DeliveryService {
             Thread.sleep(5000); // 5초 대기 (배송 중 시뮬레이션)
 
             Delivery delivery = deliveryRepository.findById(deliveryId)
-                    .orElseThrow(() -> new IllegalArgumentException("배송 정보를 찾을 수 없습니다"));
+                    .orElseThrow(() -> new DeliveryNotFoundException(deliveryId));
 
             // 5% 확률로 배송 실패 (수령 거부, 주소 오류 등)
             if (Math.random() < 0.05) {
