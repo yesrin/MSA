@@ -39,6 +39,7 @@ public class OrderService {
 
         Order order = new Order(
             request.getUserId(),
+            request.getProductId(),
             request.getProductName(),
             request.getQuantity(),
             request.getPrice()
@@ -62,6 +63,7 @@ public class OrderService {
 
         Order order = new Order(
             request.getUserId(),
+            request.getProductId(),
             request.getProductName(),
             request.getQuantity(),
             request.getPrice()
@@ -122,12 +124,14 @@ public class OrderService {
     @NoArgsConstructor
     public static class CreateOrderRequest {
         private Long userId;
+        private Long productId;
         private String productName;
         private Integer quantity;
         private BigDecimal price;
 
-        public CreateOrderRequest(Long userId, String productName, Integer quantity, BigDecimal price) {
+        public CreateOrderRequest(Long userId, Long productId, String productName, Integer quantity, BigDecimal price) {
             this.userId = userId;
+            this.productId = productId;
             this.productName = productName;
             this.quantity = quantity;
             this.price = price;

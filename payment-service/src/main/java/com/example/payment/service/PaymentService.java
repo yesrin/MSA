@@ -13,6 +13,8 @@ import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
+import java.math.BigDecimal;
+
 @Slf4j
 @Service
 @RequiredArgsConstructor
@@ -27,7 +29,7 @@ public class PaymentService {
      * @return 결제 성공 시 Payment 객체, 실패 시 null
      */
     @Transactional
-    public Payment processPayment(Long orderId, Integer amount) {
+    public Payment processPayment(Long orderId, BigDecimal amount) {
         return processPayment(orderId, amount, null);
     }
 
@@ -39,7 +41,7 @@ public class PaymentService {
      * @return 결제 성공 시 Payment 객체, 실패 시 null
      */
     @Transactional
-    public Payment processPayment(Long orderId, Integer amount, String pgType) {
+    public Payment processPayment(Long orderId, BigDecimal amount, String pgType) {
         log.info("[Payment Service] 결제 처리 요청 - orderId: {}, amount: {}, pgType: {}",
                 orderId, amount, pgType);
 

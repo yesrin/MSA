@@ -6,6 +6,7 @@ import lombok.Getter;
 import lombok.NoArgsConstructor;
 
 import java.io.Serializable;
+import java.math.BigDecimal;
 import java.time.LocalDateTime;
 
 /**
@@ -44,7 +45,7 @@ public class InventoryReservedEvent implements Serializable {
     /**
      * 결제할 금액
      */
-    private Integer totalPrice;
+    private BigDecimal totalPrice;
 
     /**
      * 이벤트 발생 시각

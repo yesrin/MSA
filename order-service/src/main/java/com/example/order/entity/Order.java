@@ -20,6 +20,9 @@ public class Order extends BaseEntity {
     private Long userId;
 
     @Column(nullable = false)
+    private Long productId;
+
+    @Column(nullable = false)
     private String productName;
 
     @Column(nullable = false)
@@ -32,8 +35,9 @@ public class Order extends BaseEntity {
     @Column(nullable = false)
     private OrderStatus status = OrderStatus.PENDING;
 
-    public Order(Long userId, String productName, Integer quantity, BigDecimal price) {
+    public Order(Long userId, Long productId, String productName, Integer quantity, BigDecimal price) {
         this.userId = userId;
+        this.productId = productId;
         this.productName = productName;
         this.quantity = quantity;
         this.price = price;

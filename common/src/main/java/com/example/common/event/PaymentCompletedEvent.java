@@ -6,6 +6,7 @@ import lombok.Getter;
 import lombok.NoArgsConstructor;
 
 import java.io.Serializable;
+import java.math.BigDecimal;
 import java.time.LocalDateTime;
 
 /**
@@ -34,7 +35,7 @@ public class PaymentCompletedEvent implements Serializable {
     /**
      * 결제 금액
      */
-    private Integer amount;
+    private BigDecimal amount;
 
     /**
      * 결제 수단 (CARD, BANK_TRANSFER 등)

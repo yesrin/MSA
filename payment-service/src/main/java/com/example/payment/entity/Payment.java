@@ -5,6 +5,7 @@ import lombok.AllArgsConstructor;
 import lombok.Getter;
 import lombok.NoArgsConstructor;
 
+import java.math.BigDecimal;
 import java.time.LocalDateTime;
 
 /**
@@ -36,8 +37,8 @@ public class Payment {
     /**
      * 결제 금액
      */
-    @Column(nullable = false)
-    private Integer amount;
+    @Column(nullable = false, precision = 10, scale = 2)
+    private BigDecimal amount;
 
     /**
      * 결제 수단
@@ -58,7 +59,7 @@ public class Payment {
     @Column(nullable = false)
     private LocalDateTime paymentAt;
 
-    public Payment(Long orderId, String paymentId, Integer amount, String paymentMethod) {
+    public Payment(Long orderId, String paymentId, BigDecimal amount, String paymentMethod) {
         this.orderId = orderId;
         this.paymentId = paymentId;
         this.amount = amount;

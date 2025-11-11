@@ -8,6 +8,7 @@ import org.springframework.kafka.core.KafkaTemplate;
 import org.springframework.kafka.support.SendResult;
 import org.springframework.stereotype.Component;
 
+import java.math.BigDecimal;
 import java.time.LocalDateTime;
 import java.util.concurrent.CompletableFuture;
 
@@ -30,12 +31,16 @@ public class OrderEventProducer {
      * @param order 생성된 주문
      */
     public void publishOrderCreated(Order order) {
+        BigDecimal totalPrice = order.getPrice().multiply(BigDecimal.valueOf(order.getQuantity()));
+
         OrderCreatedEvent event = OrderCreatedEvent.builder()
                 .orderId(order.getId())
                 .userId(order.getUserId())
+                .productId(order.getProductId())
                 .productName(order.getProductName())
                 .quantity(order.getQuantity())
-                .price(order.getPrice().intValue())  // BigDecimal → Integer 변환
+                .price(order.getPrice())
+                .totalPrice(totalPrice)
                 .createdAt(LocalDateTime.now())
                 .build();
 

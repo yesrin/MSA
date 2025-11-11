@@ -6,6 +6,7 @@ import lombok.Getter;
 import lombok.NoArgsConstructor;
 
 import java.io.Serializable;
+import java.math.BigDecimal;
 import java.time.LocalDateTime;
 
 /**
@@ -33,6 +34,11 @@ public class OrderCreatedEvent implements Serializable {
     private Long userId;
 
     /**
+     * 상품 ID
+     */
+    private Long productId;
+
+    /**
      * 상품명
      */
     private String productName;
@@ -43,9 +49,14 @@ public class OrderCreatedEvent implements Serializable {
     private Integer quantity;
 
     /**
-     * 가격
+     * 가격 (단가)
      */
-    private Integer price;
+    private BigDecimal price;
+
+    /**
+     * 총 금액 (단가 × 수량)
+     */
+    private BigDecimal totalPrice;
 
     /**
      * 이벤트 발생 시각
