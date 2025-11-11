@@ -1,6 +1,6 @@
 # E-Commerce MSA 프로젝트
 
-주의 : 전체적인 MSA 학습을 위한 프로젝트이며 디테일한 기능구현이 미흡합니다.
+주의 : 전체적인 MSA 학습을 위한 프로젝트이며 디테일한 기능구현에서 미흡함이 있습니다.
 
 
 ## 1. 프로젝트 개요
@@ -74,7 +74,7 @@
 - **Resilience4j**: Circuit Breaker, Fallback
 - **Micrometer Tracing + Brave**: 분산 추적
 - **Zipkin**: 트레이싱 서버
-- ** MySQL**: RDBS
+- **MySQL**: RDBS
 
 ### Infra
 - **Docker**: 컨테이너화
