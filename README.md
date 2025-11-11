@@ -1,16 +1,13 @@
-# Spring Cloud + Kubernetes 기반 E-Commerce MSA 프로젝트
+# E-Commerce MSA 프로젝트
 
 ## 1. 프로젝트 개요
 - 모놀리식 구조를 8개의 마이크로서비스로 분리한 E-Commerce 시스템 구현
+- Apache Kafka 기반 Event-Driven Architecture로 서비스 간 비동기 통신
 - Saga 패턴을 통한 분산 트랜잭션 처리 및 보상 트랜잭션 구현
 - Redis 분산 락을 활용한 동시성 제어 및 재고 관리
-- Apache Kafka 기반 Event-Driven Architecture로 서비스 간 비동기 통신
-- Spring Cloud Gateway를 사용하여 서비스 라우팅 및 API Gateway 패턴 구현
-- Resilience4j를 통한 Circuit Breaker/Fallback 적용으로 장애 대응
-- Micrometer Tracing + Zipkin으로 분산 추적 환경 구축, 서비스 간 호출 흐름 시각화
 - OpenFeign을 통한 마이크로서비스 간 동기 통신 구현
 - Docker 컨테이너화 및 Docker Compose를 통한 로컬 개발 환경 구축
-- Kubernetes 배포를 위한 클라우드 네이티브 아키텍처 설계
+- Micrometer Tracing + Zipkin으로 분산 추적 환경 구축, 서비스 간 호출 흐름 시각화
 
 ## 2. 아키텍처 다이어그램
 
@@ -74,7 +71,7 @@
 - **Resilience4j**: Circuit Breaker, Fallback
 - **Micrometer Tracing + Brave**: 분산 추적
 - **Zipkin**: 트레이싱 서버
-- **H2 / MySQL**: Database per Service 패턴
+- ** MySQL**: RDBS
 
 ### Infra
 - **Docker**: 컨테이너화
