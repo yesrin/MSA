@@ -32,8 +32,8 @@ subprojects {
 
     // 공통 의존성
     dependencies {
-        compileOnly 'org.projectlombok:lombok:1.18.32'  // Java 21 호환 버전
-        annotationProcessor 'org.projectlombok:lombok:1.18.32'
+        compileOnly 'org.projectlombok:lombok:1.18.34'  // Java 21 최신 호환 버전
+        annotationProcessor 'org.projectlombok:lombok:1.18.34'
         testImplementation 'org.springframework.boot:spring-boot-starter-test'
 
         // Distributed Tracing - Micrometer + Zipkin

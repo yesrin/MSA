@@ -11,5 +11,7 @@ dependencies {
     implementation 'org.springframework.cloud:spring-cloud-starter-config'  // Config Client
     implementation 'org.springframework.boot:spring-boot-starter-actuator'  // Health check & Metrics
 
-    runtimeOnly 'com.mysql:mysql-connector-j'  // MySQL Driver
+    // Database
+    runtimeOnly 'com.h2database:h2'  // 로컬 개발용
+    runtimeOnly 'com.mysql:mysql-connector-j'  // Docker/운영용
 }

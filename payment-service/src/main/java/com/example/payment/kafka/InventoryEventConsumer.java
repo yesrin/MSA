@@ -1,0 +1,52 @@
+package com.example.payment.kafka;
+
+import com.example.common.event.InventoryReservedEvent;
+import com.example.payment.entity.Payment;
+import com.example.payment.service.PaymentService;
+import lombok.RequiredArgsConstructor;
+import lombok.extern.slf4j.Slf4j;
+import org.springframework.kafka.annotation.KafkaListener;
+import org.springframework.stereotype.Component;
+
+/**
+ * Inventory 이벤트 구독
+ */
+@Slf4j
+@Component
+@RequiredArgsConstructor
+public class InventoryEventConsumer {
+
+    private final PaymentService paymentService;
+    private final PaymentEventProducer paymentEventProducer;
+
+    /**
+     * 재고 확보 성공 이벤트 수신 → 결제 처리
+     *
+     * 개선사항:
+     * - try-catch 제거: DB 연결 실패 등은 자동 재시도
+     * - 비즈니스 실패(잔액 부족)는 명시적 처리
+     */
+    @KafkaListener(
+            topics = "inventory-events",
+            groupId = "payment-service-group",
+            containerFactory = "kafkaListenerContainerFactory"
+    )
+    public void handleInventoryReserved(InventoryReservedEvent event) {
+        log.info("📩 [Kafka Consumer] 재고 확보 성공 이벤트 수신 - orderId: {}, 결제 처리 시작",
+                event.getOrderId());
+
+        // DB 예외 발생 시 자동 재시도 (CommonErrorHandler)
+        Payment payment = paymentService.processPayment(
+                event.getOrderId(),
+                event.getTotalPrice()
+        );
+
+        if (payment != null) {
+            // 결제 성공 → 트랜잭션 커밋 후 이벤트 발행
+            paymentEventProducer.publishPaymentCompleted(event, payment);
+        } else {
+            // 결제 실패 (비즈니스 로직) → 보상 트랜잭션 이벤트 발행
+            paymentEventProducer.publishPaymentFailed(event);
+        }
+    }
+}
