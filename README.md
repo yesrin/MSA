@@ -1,5 +1,8 @@
 # E-Commerce MSA 프로젝트
 
+주의 : 전체적인 MSA 학습을 위한 프로젝트이며 디테일한 기능구현이 미흡합니다.
+
+
 ## 1. 프로젝트 개요
 - 모놀리식 구조를 8개의 마이크로서비스로 분리한 E-Commerce 시스템 구현
 - Apache Kafka 기반 Event-Driven Architecture로 서비스 간 비동기 통신
